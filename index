@@ -1,0 +1,180 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <title>Jeu de Tir 🎯</title>
+  <style>
+    body {
+      margin: 0;
+      background: #111;
+      color: white;
+      font-family: Arial, sans-serif;
+      text-align: center;
+    }
+    h1 {
+      margin: 20px;
+    }
+    #menu {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      height: 100vh;
+    }
+    #menu button {
+      margin: 10px;
+      padding: 15px 30px;
+      font-size: 20px;
+      border: none;
+      border-radius: 10px;
+      cursor: pointer;
+      background: #28a745;
+      color: white;
+    }
+    #menu button:hover {
+      background: #218838;
+    }
+    #jeu {
+      display: none;
+    }
+    #zoneJeu {
+      position: relative;
+      width: 100%;
+      height: 70vh;
+      background: #222;
+      overflow: hidden;
+      border: 3px solid #fff;
+      cursor: crosshair;
+    }
+    .cible {
+      position: absolute;
+      width: 60px;
+      height: 60px;
+      border-radius: 50%;
+      background: red;
+      border: 3px solid white;
+      cursor: pointer;
+    }
+    #infos {
+      margin: 15px;
+    }
+    #scores {
+      margin-top: 20px;
+    }
+    table {
+      margin: auto;
+      border-collapse: collapse;
+      color: white;
+    }
+    th, td {
+      border: 1px solid white;
+      padding: 5px 10px;
+    }
+  </style>
+</head>
+<body>
+  <div id="menu">
+    <h1>🎯 Jeu de Tir</h1>
+    <button onclick="demarrerJeu()">Jouer</button>
+    <div id="scoresMenu"></div>
+  </div>
+
+  <div id="jeu">
+    <div id="infos">
+      <p>Niveau : <span id="niveau">1</span> | Score : <span id="score">0</span> | Vies : <span id="vies">3</span></p>
+    </div>
+    <div id="zoneJeu"></div>
+
+    <h2>🏆 Meilleurs Scores</h2>
+    <div id="scores"></div>
+  </div>
+
+  <audio id="sonTir">
+    <source src="https://www.fesliyanstudios.com/play-mp3/387" type="audio/mpeg">
+  </audio>
+
+  <script>
+    let niveau = 1;
+    let score = 0;
+    let vies = 3;
+    let scoreCible = 5;
+    let intervalCibles;
+    let zone = document.getElementById("zoneJeu");
+
+    // Charger meilleurs scores depuis le stockage local
+    let meilleursScores = JSON.parse(localStorage.getItem("meilleursScores")) || [];
+
+    function afficherScores(id) {
+      let html = "<table><tr><th>Rang</th><th>Pseudo</th><th>Score</th></tr>";
+      meilleursScores.slice(0, 5).forEach((s, i) => {
+        html += "<tr><td>" + (i+1) + "</td><td>" + s.pseudo + "</td><td>" + s.score + "</td></tr>";
+      });
+      html += "</table>";
+      document.getElementById(id).innerHTML = html;
+    }
+
+    afficherScores("scoresMenu");
+
+    function demarrerJeu() {
+      document.getElementById("menu").style.display = "none";
+      document.getElementById("jeu").style.display = "block";
+      afficherScores("scores");
+      intervalCibles = setInterval(() => {
+        creerCible();
+      }, 1500);
+    }
+
+    function creerCible() {
+      let cible = document.createElement("div");
+      cible.classList.add("cible");
+
+      let x = Math.random() * (zone.clientWidth - 60);
+      let y = Math.random() * (zone.clientHeight - 60);
+      cible.style.left = x + "px";
+      cible.style.top = y + "px";
+
+      cible.onclick = function() {
+        tirer();
+        score++;
+        document.getElementById("score").innerText = score;
+        cible.remove();
+        if (score >= scoreCible * niveau) {
+          niveau++;
+          document.getElementById("niveau").innerText = niveau;
+          alert("Bravo ! Niveau " + niveau);
+        }
+      };
+
+      zone.appendChild(cible);
+
+      setTimeout(() => {
+        if (zone.contains(cible)) {
+          cible.remove();
+          vies--;
+          document.getElementById("vies").innerText = vies;
+          if (vies <= 0) {
+            finDuJeu();
+          }
+        }
+      }, 2000 - niveau * 200);
+    }
+
+    function tirer() {
+      let son = document.getElementById("sonTir");
+      son.currentTime = 0;
+      son.play();
+    }
+
+    function finDuJeu() {
+      clearInterval(intervalCibles);
+      let pseudo = prompt("💀 Game Over ! Ton score final : " + score + "\\nEntre ton pseudo :");
+      if (!pseudo) pseudo = "Anonyme";
+      meilleursScores.push({pseudo: pseudo, score: score});
+      meilleursScores.sort((a, b) => b.score - a.score);
+      localStorage.setItem("meilleursScores", JSON.stringify(meilleursScores));
+      alert("🏆 Ton score a été enregistré !");
+      location.reload();
+    }
+  </script>
+</body>
+</html>
