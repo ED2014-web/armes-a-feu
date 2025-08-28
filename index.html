@@ -17,7 +17,7 @@
     #zoneJeu {
       position: relative;
       width: 100%;
-      height: 80vh;
+      height: 70vh;
       background: #222;
       overflow: hidden;
       border: 3px solid #fff;
@@ -35,6 +35,18 @@
     #infos {
       margin: 15px;
     }
+    #scores {
+      margin-top: 20px;
+    }
+    table {
+      margin: auto;
+      border-collapse: collapse;
+      color: white;
+    }
+    th, td {
+      border: 1px solid white;
+      padding: 5px 10px;
+    }
   </style>
 </head>
 <body>
@@ -44,6 +56,9 @@
   </div>
   <div id="zoneJeu"></div>
 
+  <h2>🏆 Meilleurs Scores</h2>
+  <div id="scores"></div>
+
   <audio id="sonTir">
     <source src="https://www.fesliyanstudios.com/play-mp3/387" type="audio/mpeg">
   </audio>
@@ -52,8 +67,22 @@
     let niveau = 1;
     let score = 0;
     let vies = 3;
-    let scoreCible = 5; // points nécessaires pour passer au niveau suivant
+    let scoreCible = 5;
     let zone = document.getElementById("zoneJeu");
+
+    // Charger meilleurs scores depuis le stockage local
+    let meilleursScores = JSON.parse(localStorage.getItem("meilleursScores")) || [];
+
+    function afficherScores() {
+      let html = "<table><tr><th>Rang</th><th>Pseudo</th><th>Score</th></tr>";
+      meilleursScores.slice(0, 5).forEach((s, i) => {
+        html += "<tr><td>" + (i+1) + "</td><td>" + s.pseudo + "</td><td>" + s.score + "</td></tr>";
+      });
+      html += "</table>";
+      document.getElementById("scores").innerHTML = html;
+    }
+
+    afficherScores();
 
     function creerCible() {
       let cible = document.createElement("div");
@@ -78,18 +107,16 @@
 
       zone.appendChild(cible);
 
-      // La cible disparaît après un délai -> perte de vie
       setTimeout(() => {
         if (zone.contains(cible)) {
           cible.remove();
           vies--;
           document.getElementById("vies").innerText = vies;
           if (vies <= 0) {
-            alert("💀 Game Over ! Ton score final : " + score);
-            location.reload(); // recommencer le jeu
+            finDuJeu();
           }
         }
-      }, 2000 - niveau * 200); // plus difficile à haut niveau
+      }, 2000 - niveau * 200);
     }
 
     function tirer() {
@@ -98,7 +125,16 @@
       son.play();
     }
 
-    // Génère des cibles toutes les 1,5 secondes (plus rapide à chaque niveau)
+    function finDuJeu() {
+      let pseudo = prompt("💀 Game Over ! Ton score final : " + score + "\nEntre ton pseudo :");
+      if (!pseudo) pseudo = "Anonyme";
+      meilleursScores.push({pseudo: pseudo, score: score});
+      meilleursScores.sort((a, b) => b.score - a.score);
+      localStorage.setItem("meilleursScores", JSON.stringify(meilleursScores));
+      afficherScores();
+      location.reload();
+    }
+
     setInterval(() => {
       creerCible();
     }, 1500);
